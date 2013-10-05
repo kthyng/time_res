@@ -31,8 +31,7 @@ def get_dist(lon1,lons,lat1,lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_dispersion(name, grid=None, r=1.):
-
+def calc_dispersion(name, grid=None, r=1., ind=None):
 
     if grid is None:
         loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -88,12 +87,19 @@ def calc_dispersion(name, grid=None, r=1.):
     latpbase = latpbase[:,:lonp.shape[1]]
     tbase = tbase[:lonp.shape[1]] # has extra entries
 
-    # We know that drifters from the two sets have a one to one correspondence
+    # Use input indices
+    if ind is not None:
+        lonpbase = lonpbase[ind,:]
+        latpbase = latpbase[ind,:]
+        lonp = lonp[ind,:]
+        latp = latp[ind,:]
 
+    # We know that drifters from the two sets have a one to one correspondence
     D2 = np.ones(lonp.shape[1])*np.nan
     nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
-    for i in xrange(len(lonp[0])): # loop through drifters, time is in array, axis=1
-        # pdb.set_trace()
+    for i in xrange(lonp.shape[0]): # loop through drifters, time is in array, axis=1
+        # if i ==411:
+        #     pdb.set_trace()
         dist = get_dist(lonpbase[i,:], lonp[i,:], 
                     latpbase[i,:], latp[i,:])
         D2 = np.nansum(np.vstack([D2, dist]), axis=0)
