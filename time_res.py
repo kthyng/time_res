@@ -31,7 +31,11 @@ def get_dist(lon1,lons,lat1,lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_dispersion(name, grid=None, r=1., ind=None):
+def calc_dispersion(name, grid=None, r=1., ind=None, squared=True):
+    '''
+    This version is for comparing drifters starting at the same location over multiple 
+    different simulations
+    '''
 
     if grid is None:
         loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -53,26 +57,6 @@ def calc_dispersion(name, grid=None, r=1., ind=None):
     latpbase = dbase.variables['latp'][:]
     tbase = dbase.variables['tp'][:] # has extra entries
     dbase.close()
-
-    # dist = np.zeros((lonp.shape[0],lonp.shape[0]))
-    # for idrifter in xrange(lonp.shape[0]):
-    #     # dist contains all of the distances from other drifters for each drifter
-    #     dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
-
-    # # let the index in axis 0 be the drifter id
-    # ID = np.arange(lonp.shape[0])
-
-    # pairs = []
-    # for idrifter in xrange(lonp.shape[0]):
-    #     ind = find(dist[idrifter,:]<=r)
-    #     for i in ind:
-    #         if ID[idrifter] != ID[i]:
-    #             pairs.append([min(ID[idrifter], ID[i]), 
-    #                             max(ID[idrifter], ID[i])])
-
-    # pairs_set = set(map(tuple,pairs))
-    # pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
-    # # pairs.sort() #unnecessary but handy for checking work
 
     # Account for time difference between two simulations
     tstride = int((t[1]-t[0])/(tbase[1]-tbase[0]))
@@ -102,23 +86,65 @@ def calc_dispersion(name, grid=None, r=1., ind=None):
         #     pdb.set_trace()
         dist = get_dist(lonpbase[i,:], lonp[i,:], 
                     latpbase[i,:], latp[i,:])
-        D2 = np.nansum(np.vstack([D2, dist]), axis=0)
-        # D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
+        if squared:
+            D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
+        else:
+            D2 = np.nansum(np.vstack([D2, dist]), axis=0)
         nnans = nnans + ~np.isnan(dist)
     D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
     return D2, t
 
-    # D2 = np.ones(lonp.shape[1])*np.nan
-    # nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
-    # for ipair in xrange(len(pairs)):
-    #     dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
-    #                 latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
-    #     D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
-    #     nnans = nnans + ~np.isnan(dist)
-    # D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
-    # return D2, t
+def calc_dispersion_onesim(name, grid=None, r=1.):
+    '''
+    This version is for calculating dispersion amongst drifters in one simulation
+    '''
+
+    if grid is None:
+        loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+        grid = tracpy.inout.readgrid(loc)
+    else:
+        grid = grid
+
+    # Read in tracks
+    d = netCDF.Dataset(name)
+    # d = netCDF.Dataset('tracks/2006-02-01T00C_doturb2_ah20.nc')
+    lonp = d.variables['lonp'][:]
+    latp = d.variables['latp'][:]
+    t = d.variables['tp'][:]
+    d.close()
+
+    dist = np.zeros((lonp.shape[0],lonp.shape[0]))
+    for idrifter in xrange(lonp.shape[0]):
+        # dist contains all of the distances from other drifters for each drifter
+        dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
+
+    # let the index in axis 0 be the drifter id
+    ID = np.arange(lonp.shape[0])
+
+    pairs = []
+    for idrifter in xrange(lonp.shape[0]):
+        ind = find(dist[idrifter,:]<=r)
+        for i in ind:
+            if ID[idrifter] != ID[i]:
+                pairs.append([min(ID[idrifter], ID[i]), 
+                                max(ID[idrifter], ID[i])])
+
+    pairs_set = set(map(tuple,pairs))
+    pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
+    # pairs.sort() #unnecessary but handy for checking work
+
+    D2 = np.ones(lonp.shape[1])*np.nan
+    nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
+    for ipair in xrange(len(pairs)):
+        dist = get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
+                    latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
+        D2 = np.nansum(np.vstack([D2, dist**2]), axis=0)
+        nnans = nnans + ~np.isnan(dist)
+    D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
+
+    return D2, t
 
 # def run():
 
