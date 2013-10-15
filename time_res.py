@@ -146,76 +146,57 @@ def calc_dispersion_onesim(name, grid=None, r=1.):
 
     return D2, t
 
-# def run():
+def run():
 
-#     # Location of TXLA model output
-#     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # Location of preprocessed CRCM model output, on PONG
+    loc = 'crcm/'
 
-#     # Make sure necessary directories exist
-#     if not os.path.exists('tracks'):
-#         os.makedirs('tracks')
-#     if not os.path.exists('figures'):
-#         os.makedirs('figures')
+    # Make sure necessary directories exist
+    if not os.path.exists('tracks'):
+        os.makedirs('tracks')
+    if not os.path.exists('figures'):
+        os.makedirs('figures')
 
-#     grid = tracpy.inout.readgrid(loc)
+    llcrnrlon=-97.944923400878906; urcrnrlon=-79.164894104003906;
+    llcrnrlat=18.132225036621094; urcrnrlat=30.847625732421861
+    grid = tracpy.inout.readgrid(loc, llcrnrlon=llcrnrlon, urcrnrlon=urcrnrlon,
+                                      llcrnrlat=llcrnrlat, urcrnrlat=urcrnrlat)  # grid file, Gulf model domain
 
-#     # startdates = np.array([datetime(2006, 7, 1, 0, 1)])
-#     startdates = np.array([datetime(2006, 2, 1, 0, 1)])#, datetime(2006, 7, 1, 0, 1)])
-#     # pdb.set_trace()
+    date = np.array([datetime(2010, 7, 1, 0, 5)])
 
-#     # loop through state dates
-#     for startdate in startdates:
+    # Set changing parameters to run through
+    # time between model outputs, in seconds (5 min, 30 min, 1 hr, 4 hr, 6 hr, 8 hr)
+    tseas_use = np.array([5, 30, 30, 60, 60, 60*4, 60*4, 60*6, 60*6, 60*8])*60.
+    # Number of linear interpolation steps in time (up to equivalent to 5 min output)
+    nsteps = np.array([1, 1, 6, 1, 12, 1, 12*4, 1, 12*6, 1]) 
 
-#         date = startdate
+    # loop through options
+    for test in xrange(len(nsteps)):
 
-#         # initialize counter for number of hours to increment through simulation by
-#         nh = 0
+        # # If the particle trajectories have not been run, run them
+        # if not os.path.exists('tracks/' + name + '.nc'):
 
-#         # Start from the beginning and add days on for loop
-#         # keep running until we hit the next month
-#         while date.day < startdate.day+1:
+        # Read in simulation initialization
+        nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, zparuv, do3d, doturb, \
+                grid, dostream = init.init(grid)
 
-#             # # If the particle trajectories have not been run, run them
-#             # if not os.path.exists('tracks/' + name + '.nc'):
+        name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
+        lonp, latp, zp, t, grid = tracpy.run.run(loc, nsteps[i], ndays, ff, date, tseas, ah, av, lon0, lat0,
+                                                 z0, zpar, do3d, doturb, name, grid=grid, dostream=dostream,
+                                                 zparuv=zparuv, tseas_use=tseas_use[i])
 
-#             # Read in simulation initialization
-#             nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
-#                     grid, dostream, T0, U, V, name = init.disp(date, loc, grid=grid)
+        # # If basic figures don't exist, make them
+        # if not os.path.exists('figures/' + name + '*.png'):
 
-#             name = date.isoformat()[0:13] + '_' + name
-
-#             # Run tracpy
-#             # lonp, latp, zp, t, grid \
-#             #     = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-#             #                         lon0, lat0, z0, zpar, do3d, doturb, name, \
-#             #                         grid=grid, dostream=dostream)
-#             lonp, latp, zp, t, grid, T0, U, V \
-#                 = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-#                                     lon0, lat0, z0, zpar, do3d, doturb, name, \
-#                                     grid=grid, dostream=dostream, T0=T0, U=U, V=V)
-
-#         # # If basic figures don't exist, make them
-#         # if not os.path.exists('figures/' + name + '*.png'):
-
-#             # Read in and plot tracks
-#             d = netCDF.Dataset('tracks/' + name + '.nc')
-#             lonp = d.variables['lonp'][:]
-#             latp = d.variables['latp'][:]
-#             tracpy.plotting.tracks(lonp, latp, name, grid=grid)
-#             # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
-#             d.close()
-#             # Do transport plot
-#             tracpy.plotting.transport(name='', fmod=name, extraname=name,
-#                 Title='Transport on Shelf, for 25 days from ' + date.isoformat()[0:13], dmax=1.0)
-
-#             # Increment by 24 hours for next loop, to move through more quickly
-#             nh = nh + 24
-#             date = startdate + timedelta(hours=nh)
+        # Read in and plot tracks
+        d = netCDF.Dataset('tracks/' + name + '.nc')
+        lonp = d.variables['lonp'][:]
+        latp = d.variables['latp'][:]
+        tracpy.plotting.tracks(lonp, latp, name, grid=grid)
+        # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
+        d.close()
    
-#         # # Do transport plot
-#         # tracpy.plotting.transport(name='', fmod=startdate.isoformat()[0:7] + '*', 
-#         #     extraname=startdate.isoformat()[0:7], Title='Transport on Shelf', dmax=1.0)
 
 
-# if __name__ == "__main__":
-#     run()    
+if __name__ == "__main__":
+    run()    

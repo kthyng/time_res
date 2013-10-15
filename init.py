@@ -62,7 +62,7 @@ import tracpy
 
 units = 'seconds since 1970-01-01'
 
-def disp(date, loc, grid=None):
+def init(grid):
     '''
     Initialization for seeding drifters at all shelf model grid points to be run
     forward.
@@ -75,128 +75,31 @@ def disp(date, loc, grid=None):
                 Default is to load in grid.
     '''
 
-    # Initialize parameters
-    nsteps = 5 # 5 time interpolation steps
     ndays = 25
-    ff = 1 # This is a forward-moving simulation
+    ff = 1 # forward in time
+    ah = 0 # no diffusivity
+    av = 0 # no diffusivity
+    z0 = 's' # choosing by vertical level
+    zpar = 59 # want top vertical level of grid
+    zparuv = 0 # model output only has one level
+    do3d = 0 # just 2d
+    doturb = 0 # just comparing base paths
+    dostream = 0 # don't do transport calculations
+    loc = ['ocean_his_0001.nc', 'ocean_his_2010-07-01_00.nc']
+    date = datetime(2010, 7, 1, 0, 5)
+    # 5 minute resolution at highest, actual
+    tseas = 5*60. # time between model outputs, in seconds
+    units = 'seconds since 1970-01-01'    
 
-    # Time between outputs
-    tseas = 4*3600 # 4 hours between outputs, in seconds, time between model outputs 
-    ah = 5.
-    av = 0. # m^2/s
-
-    if grid is None:
-        # if loc is the aggregated thredds server, the grid info is
-        # included in the same file
-        grid = tracpy.inout.readgrid(loc)
-    else:
-        grid = grid
-
-    seed = 'B'
-    dx = 1000 # particle separation for seeding, in x and y
-    V = 30 # min amount of volume each drifter represents, approximately
-    name = seed + 'dx' + str(dx) + 'V' + str(V)
-
-    # Initial lon/lat locations for drifters
-    # Start uniform array of drifters across domain using x,y coords
-    # llcrnrlon = -92.25; urcrnrlon = -91.75; llcrnrlat = 29; urcrnrlat = 29.3; #C
-    llcrnrlon = -97; urcrnrlon = -96.5; llcrnrlat = 27; urcrnrlat = 27.5; #B
-    # llcrnrlon = -95; urcrnrlon = -94; llcrnrlat = 27.5; urcrnrlat = 28.5; #B
+    # Mesh of lat/lon starting points (same as horizontal_diffusivity, the LaCasce 2003 SCULP 1 locations)
+    llcrnrlon = -93.8; urcrnrlon = -92.2; llcrnrlat = 28; urcrnrlat = 29.2; # New
     xcrnrs, ycrnrs = grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
-    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], dx), 
-                        np.arange(ycrnrs[0], ycrnrs[1], dx))
-    # X, Y = np.meshgrid(np.arange(grid['xr'].min(),grid['xr'].max(),700), 
-    #                     np.arange(grid['yr'].min(),grid['yr'].max(),700))
+    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 700), 
+                        np.arange(ycrnrs[0], ycrnrs[1], 700))
     lon0, lat0 = grid['basemap'](X, Y, inverse=True)
 
     # Eliminate points that are outside domain or in masked areas
-    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, grid)
-    # pdb.set_trace()
-
-    # Interpolate to get starting positions in grid space
-    xstart0, ystart0, _ = tracpy.tools.interpolate2d(lon0, lat0, grid, 'd_ll2ij')
-
-    # Initialize seed locations 
-    ia = np.ceil(xstart0).astype(int) #[253]#,525]
-    ja = np.ceil(ystart0).astype(int) #[57]#,40]
-
-    np.savez('starting_locations.npz', lon0=lon0, lat0=lat0, xstart0=xstart0, ystart0=ystart0, ia=ia, ja=ja)
-    # d = np.load('starting_locations.npz')
-    # lon0 = d['lon0']; lat0=d['lat0']; xstart0=d['xstart0']; ystart0=d['ystart0'];
-    # ia=d['ia']; ja=d['ja'];
-
-    # lon0, lat0 already at cell centers
-    # # Change to get positions at the center of the given cell
-    # lon0, lat0, _ = tracpy.tools.interpolate2d(ia - 0.5, ja - 0.5, grid, 'm_ij2ll')
-    # N = 1 #lon0.size since there is only one drifter per box in this setup
-
-    # surface drifters
-    z0 = 's'  
-    zpar = 29 
-
-    # for 3d flag, do3d=0 makes the run 2d and do3d=1 makes the run 3d
-    do3d = 0
-    doturb = 2
-
-    # Flag for streamlines. All the extra steps right after this are for streamlines.
-    dostream = 1
-    # convert date to number
-    datenum = netCDF.date2num(date, units)
-    # Number of model outputs to use
-    tout = np.int((ndays*(24*3600))/tseas)
-    # Figure out what files will be used for this tracking - to get tinds for
-    # the following calculation
-    nc, tinds = tracpy.inout.setupROMSfiles(loc, datenum, ff, tout)
-    # Get fluxes at first time step in order to find initial drifter volume transport
-    uf, vf, dzt, zrt, zwt  = tracpy.inout.readfields(tinds[0],grid,nc,z0,zpar)
-    nc.close()
-    # pdb.set_trace()
-    # Initial total volume transport as a scalar quantity to be conserved
-    # Do some manipulation here to, for a given initial separation, have the drifter represent
-    # an approximately fixed amount of volume transport
-    # if it is too high currently, add drifters
-    pts = []
-    for i in xrange(ia.size): # loop over drifters
-        pts.append((ia[i], ja[i])) # list of points
-
-    lon0new = list(lon0); lat0new = list(lat0);
-    ianew = list(ia); janew = list(ja);
-    for i in xrange(len(lon0)): # loop over drifters
-        pt = tuple((ia[i], ja[i])) # drifter we are examining
-        N = pts.count(pt) # count occurrences of point, # of drifters in this cell
-        T = (abs(uf[ia[i], ja[i], 0]) + abs(vf[ia[i], ja[i], 0]))/N # transport amount
-        while T > V: # looping to get volume down
-
-            pts.insert(-1, (ia[i], ja[i]))
-            # Also update the list of points, just stick points on the end since they are repeats
-            # and order shouldn't matter. If it does matter, I could sort at the end.
-            lon0new.insert(-1, lon0[i])
-            lat0new.insert(-1, lat0[i])
-            ianew.insert(-1, ia[i])
-            janew.insert(-1, ja[i])
-            N = pts.count(pt) # count occurrences of point, # of drifters in this cell
-            T = (abs(uf[ia[i], ja[i], 0]) + abs(vf[ia[i], ja[i], 0]))/N # transport amount
-
-    lon0new = np.array(lon0new)
-    lat0new = np.array(lat0new)
-
-    # T0 is the volume transport represented by each drifter, so same size as lon0
-    # To find this out, loop through new set of drifters
-    T0 = np.zeros(len(lon0new))
-    N = np.zeros(len(lon0new))
-    for i in xrange(len(lon0new)): # loop over drifters
-        pt = tuple((ianew[i], janew[i])) # drifter we are examining
-        N[i] = pts.count(pt) # count occurrences of point, # of drifters in this cell
-        T0[i] = (abs(uf[ianew[i], janew[i], 0]) + abs(vf[ianew[i], janew[i], 0]))/N[i]
-
-    # Copy over new arrays
-    lon0 = lon0new; lat0 = lat0new;
-
-    # Initialize the arrays to save the transports on the grid in the loop.
-    # These arrays aggregate volume transport when a drifter enters or exits a grid cell
-    # These should start at zero since we don't know which way things will travel yet
-    U = np.ma.zeros(grid['xu'].shape,order='F')
-    V = np.ma.zeros(grid['xv'].shape,order='F')
+    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, grid_gulf)
 
     return nsteps, ndays, ff, tseas, ah, av, lon0, lat0, \
-            z0, zpar, do3d, doturb, grid, dostream, T0, U, V, name
+            z0, zpar, zparuv, do3d, doturb, grid, dostream
