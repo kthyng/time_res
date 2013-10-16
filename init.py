@@ -99,7 +99,7 @@ def init(grid):
     lon0, lat0 = grid['basemap'](X, Y, inverse=True)
 
     # Eliminate points that are outside domain or in masked areas
-    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, grid_gulf)
+    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, grid)
 
-    return nsteps, ndays, ff, tseas, ah, av, lon0, lat0, \
+    return ndays, ff, tseas, ah, av, lon0, lat0, \
             z0, zpar, zparuv, do3d, doturb, grid, dostream

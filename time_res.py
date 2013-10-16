@@ -149,7 +149,7 @@ def calc_dispersion_onesim(name, grid=None, r=1.):
 def run():
 
     # Location of preprocessed CRCM model output, on PONG
-    loc = 'crcm/'
+    loc = ['crcm/', '/pong/raid/data/crcm/BP/2010/0703/ocean_his_0703_2010-07-03_00.nc']
 
     # Make sure necessary directories exist
     if not os.path.exists('tracks'):
@@ -166,35 +166,35 @@ def run():
 
     # Set changing parameters to run through
     # time between model outputs, in seconds (5 min, 30 min, 1 hr, 4 hr, 6 hr, 8 hr)
-    tseas_use = np.array([5, 30, 30, 60, 60, 60*4, 60*4, 60*6, 60*6, 60*8])*60.
+    tseas_use = np.array([5, 10, 10, 20, 20, 30, 30, 60, 60, 60*4, 60*4, 60*6, 60*6, 60*8])*60.
     # Number of linear interpolation steps in time (up to equivalent to 5 min output)
-    nsteps = np.array([1, 1, 6, 1, 12, 1, 12*4, 1, 12*6, 1]) 
+    nsteps = np.array([1, 1, 2, 1, 4, 1, 6, 1, 12, 1, 12*4, 1, 12*6, 1]) 
 
     # loop through options
-    for test in xrange(len(nsteps)):
-
-        # # If the particle trajectories have not been run, run them
-        # if not os.path.exists('tracks/' + name + '.nc'):
-
-        # Read in simulation initialization
-        nstep, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, zparuv, do3d, doturb, \
-                grid, dostream = init.init(grid)
+    for i in xrange(len(nsteps)):
 
         name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
-        lonp, latp, zp, t, grid = tracpy.run.run(loc, nsteps[i], ndays, ff, date, tseas, ah, av, lon0, lat0,
-                                                 z0, zpar, do3d, doturb, name, grid=grid, dostream=dostream,
-                                                 zparuv=zparuv, tseas_use=tseas_use[i])
 
-        # # If basic figures don't exist, make them
-        # if not os.path.exists('figures/' + name + '*.png'):
+        # If the particle trajectories have not been run, run them
+        if not os.path.exists('tracks/' + name + '.nc'):
 
-        # Read in and plot tracks
-        d = netCDF.Dataset('tracks/' + name + '.nc')
-        lonp = d.variables['lonp'][:]
-        latp = d.variables['latp'][:]
-        tracpy.plotting.tracks(lonp, latp, name, grid=grid)
-        # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
-        d.close()
+            # Read in simulation initialization
+            ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, zparuv, do3d, doturb, \
+                    grid, dostream = init.init(grid)
+            lonp, latp, zp, t, grid = tracpy.run.run(loc, nsteps[i], ndays, ff, date, tseas, ah, av, lon0, lat0,
+                                                     z0, zpar, do3d, doturb, name, grid=grid, dostream=dostream,
+                                                     zparuv=zparuv, tseas_use=tseas_use[i])
+
+        # If basic figures don't exist, make them
+        if not os.path.exists('figures/' + name + '*.png'):
+
+            # Read in and plot tracks
+            d = netCDF.Dataset('tracks/' + name + '.nc')
+            lonp = d.variables['lonp'][:]
+            latp = d.variables['latp'][:]
+            tracpy.plotting.tracks(lonp, latp, name, grid=grid)
+            # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
+            d.close()
    
 
 
