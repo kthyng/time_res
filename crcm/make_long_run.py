@@ -38,10 +38,6 @@ for i, File in enumerate(Files[:-1]):
     # u and v are on rho grid to start
     yu = uin1.shape[1]; xu = uin1.shape[2] - 1; yv = uin1.shape[1] - 1; xv = uin1.shape[2]; nt = uin1.shape[0];
     zl = 1; # recreate all 60 levels so that tracpy code is consistent between model output and grid
-    uin1 = op.resize(uin1, 2); # onto staggered grid
-    uin1 = uin1.reshape((nt, 1, yu, xu)).repeat(zl,axis=1)
-    uin2 = op.resize(uin2, 2); # onto staggered grid
-    uin2 = uin2.reshape((nt, 1, yu, xu)).repeat(zl,axis=1)
 
     # Make own time vector
     date1 = datetime(2010, int(Times1[0,5] + Times1[0,6]), int(Times1[0,8] + Times1[0,9]), 
@@ -61,16 +57,25 @@ for i, File in enumerate(Files[:-1]):
     istart_dates1 = find(dates1>=date2)[0]
     # Indices for overlap period in dates2: beginning of array to iend_dates2
     iend_dates2 = find(dates2>=dates1[-1])[0]+1 # +1 for proper array indexing
+    # Start of overlap region at the end of the second file to cut off since will be included in next file
+    istart_dates2 = istart_dates1
     # interpolation constant for each time step
     r2 = np.linspace(0, 1, t1[istart_dates1:].size)
     r1 = 1. - r2
 
     # Linearly combine model output in overlap region
-    uin = uin2.copy()
-    uin[:iend_dates2] = (r1.reshape(r1.size,1,1,1)*uin1[istart_dates1:] + r2.reshape(r1.size,1,1,1)*uin2[:iend_dates2])
-    del(uin1,uin2)
     # pdb.set_trace()
-    t = t2.copy()
+    uin2[:iend_dates2] = (r1.reshape(r1.size,1,1)*uin1[istart_dates1:] + r2.reshape(r1.size,1,1)*uin2[:iend_dates2])
+    del(uin1)
+    # Cut off end part
+    uin2 = uin2[:istart_dates2] 
+    t = t2[:istart_dates2]
+    # Update time dimension
+    nt = uin2.shape[0]
+
+    # u and v are on rho grid to start
+    uin2 = op.resize(uin2, 2); # onto staggered grid
+    uin2 = uin2.reshape((nt, 1, yu, xu)).repeat(zl,axis=1)
 
     # Make new file
     rootgrp = netCDF.Dataset('ocean_his_' + str(i+1).zfill(4) + '.nc','w',format='NETCDF3_64BIT')
@@ -79,28 +84,28 @@ for i, File in enumerate(Files[:-1]):
     rootgrp.createDimension('xv',xv)
     rootgrp.createDimension('yv',yv)
     rootgrp.createDimension('zl',zl)
-    rootgrp.createDimension('nt',nt)
+    # Change time dimension to be unlimited for aggregation later
+    rootgrp.createDimension('nt',None)
     ocean_time = rootgrp.createVariable('ocean_time','f8',('nt')) # 64-bit floating point
     u = rootgrp.createVariable('u','f4',('nt','zl','yu','xu')) # 64-bit floating point
     v = rootgrp.createVariable('v','f4',('nt','zl','yv','xv')) # 64-bit floating point
-    u[:] = uin; ocean_time[:] = t;
-    del(uin)
+    u[:] = uin2; ocean_time[:] = t;
+    del(uin2)
 
     d1 = netCDF.Dataset(File)
     d2 = netCDF.Dataset(Files[i+1])
     vin1 = d1.variables['OCN_VS'][:, 21:510, 116:771];
     vin2 = d2.variables['OCN_VS'][:, 21:510, 116:771];
     d1.close(); d2.close();
+
+    # Linearly combine model output in overlap region
+    vin2[:iend_dates2] = (r1.reshape(r1.size,1,1)*vin1[istart_dates1:] + r2.reshape(r1.size,1,1)*vin2[:iend_dates2])
+    del(vin1)
+    vin2 = vin2[:istart_dates2] 
+
     # u and v are on rho grid to start
-    vin1 = op.resize(vin1, 1); # onto staggered grid
-    vin1 = vin1.reshape((nt, 1, yv, xv)).repeat(zl,axis=1)
     vin2 = op.resize(vin2, 1); # onto staggered grid
     vin2 = vin2.reshape((nt, 1, yv, xv)).repeat(zl,axis=1)
 
-    # Linearly combine model output in overlap region
-    vin = vin2.copy()
-    vin[:iend_dates2] = (r1.reshape(r1.size,1,1,1)*vin1[istart_dates1:] + r2.reshape(r1.size,1,1,1)*vin2[:iend_dates2])
-    del(vin1,vin2)
-
-    v[:] = vin; del(vin)
+    v[:] = vin2; del(vin2)
     rootgrp.close()
