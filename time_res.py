@@ -93,10 +93,11 @@ def calc_dispersion(name, grid=None, r=1., ind=None, squared=False):
         nnans = nnans + ~np.isnan(dist)
     D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
+    # skip 'tracks/' at beginning of file name
     if squared:
-        np.savez(name[:-3] + 'D2squared.npz', D2=D2, t=t, nnans=nnans)
+        np.savez('calcs/' + name[7:-3] + 'D2.npz', D2=D2, t=t, nnans=nnans)
     else:
-        np.savez(name[:-3] + 'D2notsquared.npz', D2=D2, t=t, nnans=nnans)
+        np.savez('calcs/' + name[7:-3] + 'D.npz', D2=D2, t=t, nnans=nnans)
 
     return D2, t
 
@@ -156,7 +157,7 @@ def run_calc_dispersion(grid, squared=False):
     Files = glob.glob('tracks/*.nc')
     Files.sort()
     for File in Files:
-        D2, t = calc_dispersion(File, grid=grid, squared=squared)
+        D2, t = calc_dispersion(File, grid=grid, squared=True)
 
 
 def run():
@@ -192,8 +193,12 @@ def run():
 
         name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
 
+        print 'simulation running: ' + name
+
         # If the particle trajectories have not been run, run them
         if not os.path.exists('tracks/' + name + '.nc'):
+
+            print 'running tracks'
 
             # Read in simulation initialization
             ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, zparuv, do3d, doturb, \
@@ -201,9 +206,13 @@ def run():
             lonp, latp, zp, t, grid = tracpy.run.run(loc, nsteps[i], ndays, ff, date, tseas, ah, av, lon0, lat0,
                                                      z0, zpar, do3d, doturb, name, grid=grid, dostream=dostream,
                                                      zparuv=zparuv, tseas_use=tseas_use[i])
+        else:
+            print 'skipping tracks'
 
         # If basic figures don't exist, make them
-        if not os.path.exists('figures/' + name + '*.png'):
+        if not os.path.exists('figures/' + name + 'tracks.png'):
+
+            print 'running plots'
 
             # Read in and plot tracks
             d = netCDF.Dataset('tracks/' + name + '.nc')
@@ -212,6 +221,8 @@ def run():
             tracpy.plotting.tracks(lonp, latp, name, grid=grid)
             # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
             d.close()
+        else:
+            print 'skipping plots'
    
 
 
