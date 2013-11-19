@@ -31,7 +31,7 @@ def get_dist(lon1,lons,lat1,lats):
                                        * np.sin(0.50*(lon1-lons))**2))
     return distance
 
-def calc_dispersion(name, grid=None, r=1., ind=None, squared=True):
+def calc_dispersion(name, grid=None, r=1., ind=None, squared=False):
     '''
     This version is for comparing drifters starting at the same location over multiple 
     different simulations
@@ -93,10 +93,15 @@ def calc_dispersion(name, grid=None, r=1., ind=None, squared=True):
         nnans = nnans + ~np.isnan(dist)
     D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
+    if squared:
+        np.savez(name[:-3] + 'D2squared.npz', D2=D2, t=t, nnans=nnans)
+    else:
+        np.savez(name[:-3] + 'D2notsquared.npz', D2=D2, t=t, nnans=nnans)
+
     return D2, t
 
 
-def calc_dispersion_onesim(name, grid=None, r=1.):
+def calc_dispersion_onesim(name, grid=None, squared=False, r=1.):
     '''
     This version is for calculating dispersion amongst drifters in one simulation
     '''
@@ -146,6 +151,14 @@ def calc_dispersion_onesim(name, grid=None, r=1.):
 
     return D2, t
 
+def run_calc_dispersion(grid, squared=False):
+
+    Files = glob.glob('tracks/*.nc')
+    Files.sort()
+    for File in Files:
+        D2, t = calc_dispersion(File, grid=grid, squared=squared)
+
+
 def run():
 
     # Location of preprocessed CRCM model output, on PONG
@@ -166,9 +179,13 @@ def run():
 
     # Set changing parameters to run through
     # time between model outputs, in seconds (5 min, 30 min, 1 hr, 4 hr, 6 hr, 8 hr)
-    tseas_use = np.array([5, 10, 10, 20, 20, 30, 30, 60, 60, 60*4, 60*4, 60*6, 60*6, 60*8])*60.
+    tseas_use = np.array([5, 10, 10, 20, 20, 30, 30, 60, 60, 
+                            60*4, 60*4, 60*4, 60*4, 60*4, 60*4, 60*4, 60*4, 60*4, 
+                            60*6, 60*6, 60*8])*60.
     # Number of linear interpolation steps in time (up to equivalent to 5 min output)
-    nsteps = np.array([1, 1, 2, 1, 4, 1, 6, 1, 12, 1, 12*4, 1, 12*6, 1]) 
+    nsteps = np.array([1, 1, 2, 1, 4, 1, 6, 1, 12, 
+                            1, 2, 4, 6, 8, 16, 24, 36, 12*4, 
+                            1, 12*6, 1]) 
 
     # loop through options
     for i in xrange(len(nsteps)):
