@@ -64,7 +64,7 @@ def run():
                     grid, dostream = init.init(grid)
             lonp, latp, zp, t, grid = tracpy.run.run(loc, nsteps[i], ndays, ff, date, tseas, ah, av, lon0, lat0,
                                                      z0, zpar, do3d, doturb, name, grid=grid, dostream=dostream,
-                                                     zparuv=zparuv, tseas_use=tseas_use[i])
+                                                     N=N[i], zparuv=zparuv, tseas_use=tseas_use[i])
         else:
             print 'skipping tracks'
 
