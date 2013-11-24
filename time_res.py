@@ -129,17 +129,22 @@ def calc_dispersion_onesim(name, grid=None, squared=False, r=1.):
     # let the index in axis 0 be the drifter id
     ID = np.arange(lonp.shape[0])
 
-    pairs = []
-    for idrifter in xrange(lonp.shape[0]):
-        ind = find(dist[idrifter,:]<=r)
-        for i in ind:
-            if ID[idrifter] != ID[i]:
-                pairs.append([min(ID[idrifter], ID[i]), 
-                                max(ID[idrifter], ID[i])])
+    # save pairs to save time since they are always the same
+    if not os.path.exists('tracks/pairs.npz'):
+        pairs = []
+        for idrifter in xrange(lonp.shape[0]):
+            ind = find(dist[idrifter,:]<=r)
+            for i in ind:
+                if ID[idrifter] != ID[i]:
+                    pairs.append([min(ID[idrifter], ID[i]), 
+                                    max(ID[idrifter], ID[i])])
 
-    pairs_set = set(map(tuple,pairs))
-    pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
-    # pairs.sort() #unnecessary but handy for checking work
+        pairs_set = set(map(tuple,pairs))
+        pairs = map(list,pairs_set)# now pairs has only unique pairs of drifters
+        pairs.sort() #unnecessary but handy for checking work
+        np.savez('tracks/pairs.npz', pairs=pairs)
+    else:
+        pairs = np.load('tracks/pairs.npz')['pairs']
 
     D2 = np.ones(lonp.shape[1])*np.nan
     nnans = np.zeros(lonp.shape[1]) # to collect number of non-nans over all drifters for a time
@@ -150,6 +155,8 @@ def calc_dispersion_onesim(name, grid=None, squared=False, r=1.):
         nnans = nnans + ~np.isnan(dist)
     D2 = D2.squeeze()/nnans #len(pairs) # average over all pairs
 
+    np.savez('calcs/' + name[7:-3] + 'D2phys.npz', D2=D2, t=t, nnans=nnans)
+
     return D2, t
 
 def run_calc_dispersion(grid, squared=False):
@@ -157,8 +164,14 @@ def run_calc_dispersion(grid, squared=False):
     Files = glob.glob('tracks/*.nc')
     Files.sort()
     for File in Files:
-        D2, t = calc_dispersion(File, grid=grid, squared=True)
+        D2, t = calc_dispersion(File, grid=grid, squared=False)
 
+def run_calc_dispersion_onesim(grid, squared=False):
+
+    Files = glob.glob('tracks/*.nc')
+    Files.sort()
+    for File in Files:
+        D2, t = calc_dispersion_onesim(File, grid=grid, squared=True)
 
 def run():
 
