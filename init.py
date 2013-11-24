@@ -94,8 +94,10 @@ def init(grid):
     # Mesh of lat/lon starting points (same as horizontal_diffusivity, the LaCasce 2003 SCULP 1 locations)
     llcrnrlon = -93.8; urcrnrlon = -92.2; llcrnrlat = 28; urcrnrlat = 29.2; # New
     xcrnrs, ycrnrs = grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
-    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 700), 
-                        np.arange(ycrnrs[0], ycrnrs[1], 700))
+    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 2000), 
+                        np.arange(ycrnrs[0], ycrnrs[1], 2000))
+    # X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 700), 
+    #                     np.arange(ycrnrs[0], ycrnrs[1], 700))
     lon0, lat0 = grid['basemap'](X, Y, inverse=True)
 
     # Eliminate points that are outside domain or in masked areas
