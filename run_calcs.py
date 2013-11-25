@@ -12,6 +12,8 @@ lonpc = dc.variables['lonp'][:]; latpc = dc.variables['latp'][:]; tpc = dc.varia
 
 loc = ['crcm/', '/pong/raid/data/crcm/BP/2010/0703/ocean_his_0703_2010-07-03_00.nc']
 grid = tracpy.inout.readgrid(loc)
+
+nc = netCDF.MFDataset('crcm/ocean*.nc')
 for File in Files:
 
     # Read in tracks
@@ -58,7 +60,7 @@ for File in Files:
     np.savez('calcs/' + File.split('/')[1][:-3] + 's2.npz', D2=D2, t=tp, nnans=nnans)
 
     # Calculate velocity along tracks
-    varp = tracpy.calcs.Var(xp, yp, tp, 'u', dg)
+    varp = tracpy.calcs.Var(xp, yp, tp, 'u', nc)
     np.savez('calcs/' + File.split('/')[1][:-3] + 'u.npz', var=varp, t=tp, nnans=nnans)
-    varp = tracpy.calcs.Var(xp, yp, tp, 'v', dg)
+    varp = tracpy.calcs.Var(xp, yp, tp, 'v', nc)
     np.savez('calcs/' + File.split('/')[1][:-3] + 'v.npz', var=varp, t=tp, nnans=nnans)
