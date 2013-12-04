@@ -24,8 +24,12 @@ def run():
     # Make sure necessary directories exist
     if not os.path.exists('tracks'):
         os.makedirs('tracks')
+    if not os.path.exists('tracks/test'):
+        os.makedirs('tracks/test')
     if not os.path.exists('figures'):
         os.makedirs('figures')
+    if not os.path.exists('figures/test'):
+        os.makedirs('figures/test')
 
     llcrnrlon=-97.944923400878906; urcrnrlon=-79.164894104003906;
     llcrnrlat=18.132225036621094; urcrnrlat=30.847625732421861
@@ -35,7 +39,7 @@ def run():
     date = np.array([datetime(2010, 7, 1, 0, 5)])
 
     # Set changing parameters to run through
-    # time between model outputs, in seconds (5 min, 30 min, 1 hr, 4 hr, 6 hr, 8 hr)
+    # time between model outputs, in seconds (5 min, 30 min, 1 hr, 2, 3, 4 hr, 6 hr)
     tseas_use = np.array([5, 10, 20, 30, 45, 60, 
                             60*2, 60*3, 60*4, 60*6])*60.
     # Number of linear interpolation steps in time (up to equivalent to 5 min output
@@ -50,7 +54,7 @@ def run():
     # loop through options
     for i in xrange(len(nsteps)):
 
-        name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
+        name = 'test/' + 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
 
         print 'simulation running: ' + name
 
