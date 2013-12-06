@@ -40,16 +40,19 @@ def run():
 
     # Set changing parameters to run through
     # time between model outputs, in seconds (5 min, 30 min, 1 hr, 2, 3, 4 hr, 6 hr)
-    tseas_use = np.array([5, 10, 20, 30, 45, 60, 
-                            60*2, 60*3, 60*4, 60*6])*60.
+    tseas_use = np.array([60*8, 60*10])*60.
+    # tseas_use = np.array([5, 10, 20, 30, 45, 60, 
+    #                         60*2, 60*3, 60*4, 60*6])*60.
     # Number of linear interpolation steps in time (up to equivalent to 5 min output
     # so that the fields are updated at the same max times)
-    nsteps = np.array([1, 2, 4, 6, 9, 12, 
-                        24, 36, 48, 72]) 
+    nsteps = np.array([96, 120]) 
+    # nsteps = np.array([1, 2, 4, 6, 9, 12, 
+    #                     24, 36, 48, 72]) 
 
     # Sampling timing. Make so that always sampling at 5 minutes, in all simulations.
-    N = np.array([1, 2, 4, 6, 9, 12, 
-                    24, 36, 48, 72]) 
+    N = np.array([96, 120]) 
+    # N = np.array([1, 2, 4, 6, 9, 12, 
+    #                 24, 36, 48, 72]) 
 
     # loop through options
     for i in xrange(len(nsteps)):
