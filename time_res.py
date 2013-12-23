@@ -26,10 +26,14 @@ def run():
         os.makedirs('tracks')
     if not os.path.exists('tracks/test'):
         os.makedirs('tracks/test')
+    if not os.path.exists('tracks/4th'):
+        os.makedirs('tracks/4th')
     if not os.path.exists('figures'):
         os.makedirs('figures')
     if not os.path.exists('figures/test'):
         os.makedirs('figures/test')
+    if not os.path.exists('figures/4th'):
+        os.makedirs('figures/4th')
 
     llcrnrlon=-97.944923400878906; urcrnrlon=-79.164894104003906;
     llcrnrlat=18.132225036621094; urcrnrlat=30.847625732421861
@@ -41,26 +45,27 @@ def run():
     # Set changing parameters to run through
     # time between model outputs, in seconds (5 min, 30 min, 1 hr, 2, 3, 4 hr, 6 hr)
     # tseas_use = np.array([60*8, 60*16, 60*24, 60*32, 60*40, 60*48])*60. # test
-    tseas_use = np.array([60*8, 60*10])*60. # lacasce
-    # tseas_use = np.array([5, 10, 20, 30, 45, 60, 
-    #                         60*2, 60*3, 60*4, 60*6])*60.
+    # tseas_use = np.array([60*8, 60*10])*60. # lacasce
+    tseas_use = np.array([5, 10, 20, 30, 45, 60, 
+                            60*2, 60*3, 60*4, 60*6])*60.
     # Number of linear interpolation steps in time (up to equivalent to 5 min output
     # so that the fields are updated at the same max times)
     # nsteps = np.array([96, 192, 288, 384, 480, 576]) #test
-    nsteps = np.array([96, 120])  #orig/lacasce
-    # nsteps = np.array([1, 2, 4, 6, 9, 12, 
-    #                     24, 36, 48, 72]) 
+    # nsteps = np.array([96, 120])  #orig/lacasce
+    nsteps = np.array([1, 2, 4, 6, 9, 12, 
+                        24, 36, 48, 72]) 
 
     # Sampling timing. Make so that always sampling at 5 minutes, in all simulations.
     # N = np.array([96, 192, 288, 384, 480, 576]) #test
-    N = np.array([96, 120])  #orig
-    # N = np.array([1, 2, 4, 6, 9, 12, 
-    #                 24, 36, 48, 72]) 
+    # N = np.array([96, 120])  #orig
+    N = np.array([1, 2, 4, 6, 9, 12, 
+                    24, 36, 48, 72]) 
 
     # loop through options
     for i in xrange(len(nsteps)):
 
-        name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
+        name = '4th/tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
+        # name = 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
         # name = 'test/' + 'tseas_use' + str(int(tseas_use[i])) + '_nsteps' + str(nsteps[i]) # File names to use
 
         print 'simulation running: ' + name

@@ -92,7 +92,8 @@ def init(grid):
     units = 'seconds since 1970-01-01'    
 
     # Mesh of lat/lon starting points (same as horizontal_diffusivity, the LaCasce 2003 SCULP 1 locations)
-    llcrnrlon = -93.8; urcrnrlon = -92.2; llcrnrlat = 28; urcrnrlat = 29.2; # LaCasce
+    # llcrnrlon = -93.8; urcrnrlon = -92.2; llcrnrlat = 28; urcrnrlat = 29.2; # LaCasce (orig)
+    llcrnrlon = -95.8; urcrnrlon = -94.2; llcrnrlat = 21.1; urcrnrlat = 22.3; # (4th)
     # llcrnrlon = -87.8; urcrnrlon = -86.2; llcrnrlat = 25; urcrnrlat = 26.2; # Test area
     xcrnrs, ycrnrs = grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
     X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], 2000), 
