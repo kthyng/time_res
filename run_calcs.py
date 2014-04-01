@@ -6,14 +6,14 @@ import netCDF4 as netCDF
 import numpy as np
 import pdb
 
-locsave = 'calcs/' #'calcs/4th/' #test/'# '/Volumes/Emmons/projects/time_res/'
+locsave = '/Volumes/Emmons/projects/time_res/calcs/test/' #'calcs/' #'calcs/4th/' #test/'# '/Volumes/Emmons/projects/time_res/'
 
 # Loop through tracks files and run calculations
-floc = '/Volumes/Emmons/projects/time_res/tracks/' #4th/' #test/'
+floc = '/Volumes/Emmons/projects/time_res/tracks/test/' #4th/' #test/'
 Files = glob.glob(floc + '*.nc')
 # Files = glob.glob('tracks/*.nc')
-# dc = netCDF.Dataset('/Volumes/Emmons/projects/time_res/tracks/4th/tseas_use300_nsteps1.nc') # control case, 5 min output
-dc = netCDF.Dataset('/Volumes/Emmons/projects/time_res/tracks/tseas_use300_nsteps1.nc') # control case, 5 min output
+dc = netCDF.Dataset('/Volumes/Emmons/projects/time_res/tracks/test/tseas_use300_nsteps1.nc') # control case, 5 min output
+# dc = netCDF.Dataset('/Volumes/Emmons/projects/time_res/tracks/tseas_use300_nsteps1.nc') # control case, 5 min output
 # dc = netCDF.Dataset('/Volumes/Emmons/projects/time_res/tracks/test/tseas_use300_nsteps1.nc') # control case, 5 min output
 # # dc = netCDF.Dataset('tracks/tseas_use300_nsteps1.nc') # control case, 5 min output
 lonpc = dc.variables['lonp'][:]; latpc = dc.variables['latp'][:]; tpc = dc.variables['tp'][:];
@@ -74,7 +74,10 @@ for File in Files:
     # np.savez(locsave + File.split('/')[-1][:-3] + 'Dcomp.npz', D2=D2, t=tp, 
     #                         nnans=nnans, imax=imax, imin=imin, D2max=D2max, D2min=D2min)
 
-    # # Numerical D^2
+    # Numerical D^2
+    D2, nnans = tracpy.calcs.rel_dispersion_comp(lonpc, latpc, 
+                                            tpc, lonp, latp, tp, r=1, squared=True)
+    np.savez(locsave + File.split('/')[-1][:-3] + 'D2comp.npz', D2=D2, t=tp, nnans=nnans)
     # D2, nnans, imax, imin, D2max, D2min = tracpy.calcs.rel_dispersion_comp(lonpc, latpc, 
     #                                         tpc, lonp, latp, tp, r=1, squared=True)
     # np.savez(locsave + File.split('/')[-1][:-3] + 'D2comp.npz', D2=D2, t=tp, 
@@ -161,15 +164,15 @@ for File in Files:
     # # ssmean = ss.mean(axis=0)
     # # np.savez(locsave + File.split('/')[-1][:-3] + 'ssmean.npz', ssmean=ssmean, t=tp)
 
-    # Change from s to ss and get means
-    n = 0.1; nname = 'n0p1'
-    d = np.load(locsave + File.split('/')[-1][:-3] + 's.npz')
-    s = d['ss']; t=d['t']
-    smean = s.mean(axis=0)
-    # ind = (s>n)
-    # ss = 1-s/n
-    # ss[ind] = 0.
-    # ssmean = ss.mean(axis=0)
-    # np.savez(locsave + File.split('/')[-1][:-3] + 'ss_' + nname + '.npz', ss=ss, t=t, n=n)
-    # np.savez(locsave + File.split('/')[-1][:-3] + 'ssmean_' + nname + '.npz', ssmean=ssmean, t=t, n=n)
-    np.savez(locsave + File.split('/')[-1][:-3] + 'smean_' + nname + '.npz', smean=smean, t=t)
+    # # Change from s to ss and get means
+    # n = 0.1; nname = 'n0p1'
+    # d = np.load(locsave + File.split('/')[-1][:-3] + 's.npz')
+    # s = d['ss']; t=d['t']
+    # smean = s.mean(axis=0)
+    # # ind = (s>n)
+    # # ss = 1-s/n
+    # # ss[ind] = 0.
+    # # ssmean = ss.mean(axis=0)
+    # # np.savez(locsave + File.split('/')[-1][:-3] + 'ss_' + nname + '.npz', ss=ss, t=t, n=n)
+    # # np.savez(locsave + File.split('/')[-1][:-3] + 'ssmean_' + nname + '.npz', ssmean=ssmean, t=t, n=n)
+    # np.savez(locsave + File.split('/')[-1][:-3] + 'smean_' + nname + '.npz', smean=smean, t=t)
